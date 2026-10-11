@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DM compta 241 — Gestion de dépôt de boissons</title>
+<meta name="author" content="Damien (Starly Koumba)">
+<meta name="description" content="DM compta 241 — Application de gestion de dépôt de boissons : stock, livraisons, finances, flotte. Conçu par Damien (Starly Koumba).">
+<style>
+:root{
+  --bg:#0b131c;--panel:#121d29;--panel2:#1a2836;--line:#24384c;
+  --txt:#e8eef5;--muted:#8fa3b8;--acc:#22c55e;--warn:#f59e0b;
+  --danger:#ef4444;--info:#38bdf8;--gold:#eab308;--violet:#a78bfa;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg);color:var(--txt);font-size:14px;
+  padding-bottom:160px; /* place pour filmstrip + crédit */
+}
+header{
+  background:rgba(18,29,41,.95);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);padding:10px 20px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  position:sticky;top:0;z-index:50;
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--acc);font-size:16px}
+.brand .logo{
+  width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,var(--acc),#0ea5e9);
+  display:grid;place-items:center;font-size:18px;
+}
+.brand small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.brand .credit{
+  display:block;font-weight:400;color:var(--muted);font-size:10px;
+  margin-top:1px;letter-spacing:.2px;
+}
+.brand .credit b{color:var(--gold);font-weight:600}
+nav{display:flex;gap:3px;flex-wrap:wrap;flex:1}
+nav button{
+  background:transparent;border:none;color:var(--muted);
+  padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:500;
+}
+nav button:hover{background:var(--panel2);color:var(--txt)}
+nav button.active{background:var(--acc);color:#04140a}
+.gear{
+  background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+  width:36px;height:36px;border-radius:9px;cursor:pointer;font-size:16px;
+}
+.gear:hover{border-color:var(--acc)}
+main{padding:20px;max-width:1500px;margin:0 auto;position:relative;z-index:2}
+
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+  padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit}
+.btn:hover{border-color:var(--acc)}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#04140a}
+.btn.danger{background:transparent;border-color:var(--danger);color:var(--danger)}
+.btn.mini{padding:4px 9px;font-size:12px}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#1a1205}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.card .val{font-size:22px;font-weight:700;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .sub{color:var(--muted);font-size:11px;margin-top:4px}
+.card.ok .val{color:var(--acc)}
+.card.warn .val{color:var(--warn)}
+.card.danger .val{color:var(--danger)}
+.card.info .val{color:var(--info)}
+.card.gold .val{color:var(--gold)}
+
+table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden}
+th{background:var(--panel2);text-align:left;padding:10px 13px;font-size:11.5px;
+  text-transform:uppercase;color:var(--muted);letter-spacing:.4px;font-weight:600}
+td{padding:10px 13px;border-top:1px solid var(--line);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+.toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.toolbar .spacer{flex:1}
+h2{font-size:16px;margin:0 0 12px}
+.section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+
+input,select,textarea{background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+  padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--acc)}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:12px}
+label input,label select,label textarea{margin-top:5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px}
+
+.badge{padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.b-planifiee,.b-impayee{background:rgba(56,189,248,.15);color:var(--info)}
+.b-en_cours,.b-partielle{background:rgba(245,158,11,.15);color:var(--warn)}
+.b-livree,.b-payee,.b-recette{background:rgba(34,197,94,.15);color:var(--acc)}
+.b-annulee,.b-depense{background:rgba(239,68,68,.15);color:var(--danger)}
+.b-entree{background:rgba(34,197,94,.15);color:var(--acc)}
+.b-sortie{background:rgba(239,68,68,.15);color:var(--danger)}
+.b-ajustement{background:rgba(245,158,11,.15);color:var(--warn)}
+
+.ok{color:var(--acc)}.low{color:var(--warn)}.out{color:var(--danger)}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;
+  justify-content:center;padding:20px;z-index:100;backdrop-filter:blur(4px)}
+.modal.hidden{display:none}
+.modal-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:22px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto}
+.modal-box h3{margin:0 0 16px}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.ligne{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center}
+.subtabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:8px;flex-wrap:wrap}
+.subtabs button{background:transparent;border:none;color:var(--muted);padding:7px 14px;
+  border-radius:8px;cursor:pointer;font-size:13px;font-weight:500}
+.subtabs button:hover{background:var(--panel2);color:var(--txt)}
+.subtabs button.active{background:var(--panel2);color:var(--acc)}
+.barchart{display:flex;align-items:flex-end;gap:3px;height:120px;padding:8px 0}
+.barchart .bar{flex:1;background:linear-gradient(to top,var(--acc),#0ea5e9);
+  border-radius:3px 3px 0 0;min-height:2px;position:relative}
+.barchart .bar:hover::after{content:attr(data-v);position:absolute;bottom:100%;left:50%;
+  transform:translateX(-50%);background:var(--panel2);padding:3px 7px;border-radius:5px;
+  font-size:11px;white-space:nowrap;border:1px solid var(--line)}
+.progressbar{height:8px;background:var(--panel2);border-radius:20px;overflow:hidden;margin-top:6px}
+.progressbar > div{height:100%;background:linear-gradient(90deg,var(--acc),#0ea5e9);border-radius:20px}
+
+/* ============ BANDEAU BAS : CRÉDIT + FILMSTRIP ============ */
+.bottom-zone{
+  position:fixed;bottom:0;left:0;right:0;z-index:1;
+  display:flex;flex-direction:column;
+}
+.credit-bar{
+  background:linear-gradient(90deg,#060b11,#0f1720,#060b11);
+  border-top:1px solid var(--line);
+  padding:7px 16px;text-align:center;font-size:11.5px;
+  color:var(--muted);letter-spacing:.3px;
+  display:flex;justify-content:center;align-items:center;gap:8px;
+  flex-wrap:wrap;
+}
+.credit-bar .app-name{
+  color:var(--acc);font-weight:700;font-size:12.5px;
+}
+.credit-bar .sep{color:var(--line)}
+.credit-bar .author{color:var(--gold);font-weight:600}
+.credit-bar .heart{color:#ef4444;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+
+.filmstrip{
+  height:110px;overflow:hidden;background:#060b11;
+  position:relative;
+  mask-image:linear-gradient(to top,#000 70%,transparent);
+  -webkit-mask-image:linear-gradient(to top,#000 70%,transparent);
+}
+.filmstrip .track{
+  display:flex;height:100%;width:max-content;
+  animation:filmstrip-scroll 55s linear infinite;
+  will-change:transform;
+}
+.filmstrip:hover .track{animation-play-state:paused}
+@keyframes filmstrip-scroll{
+  from{transform:translateX(0)}
+  to{transform:translateX(-50%)}
+}
+.filmstrip .item{
+  width:180px;height:100%;flex-shrink:0;display:grid;place-items:center;
+  font-size:56px;position:relative;border-right:1px solid rgba(255,255,255,.04);
+  background-size:cover;background-position:center;
+}
+.filmstrip .item img{width:100%;height:100%;object-fit:cover;display:block}
+.filmstrip .item::after{
+  content:attr(data-label);position:absolute;bottom:8px;left:8px;
+  font-size:10px;color:rgba(255,255,255,.65);text-transform:uppercase;
+  letter-spacing:.5px;background:rgba(0,0,0,.4);padding:2px 7px;border-radius:20px;
+}
+.filmstrip::before,.filmstrip::after{
+  content:"";position:absolute;top:0;bottom:0;width:80px;z-index:2;pointer-events:none;
+}
+.filmstrip::before{left:0;background:linear-gradient(to right,var(--bg),transparent)}
+.filmstrip::after{right:0;background:linear-gradient(to left,var(--bg),transparent)}
+
+/* Modale à propos */
+.about-credit{
+  text-align:center;margin-top:20px;padding-top:16px;
+  border-top:1px solid var(--line);color:var(--muted);font-size:12px;
+}
+.about-credit .name{color:var(--gold);font-weight:700;font-size:13.5px}
+.about-credit .logo-big{
+  width:60px;height:60px;margin:0 auto 10px;border-radius:14px;
+  background:linear-gradient(135deg,var(--acc),#0ea5e9);
+  display:grid;place-items:center;font-size:30px;
+}
+
+@media(max-width:760px){
+  .grid2,.grid3{grid-template-columns:1fr}
+  table{font-size:12px}
+  th,td{padding:8px}
+  .filmstrip{height:80px}
+  .filmstrip .item{width:130px;font-size:40px}
+  body{padding-bottom:130px}
+  .credit-bar{font-size:10.5px;padding:6px 10px}
+}
+@media print{
+  header,.bottom-zone,nav,.gear,.btn{display:none !important}
+  body{padding-bottom:0;background:#fff;color:#000}
+  .modal-box{max-height:none;box-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo" id="logoBox">📊</div>
+    <div>
+      <span id="brandName">DM compta 241</span>
+      <small id="brandType">Configuration requise…</small>
+      <span class="credit">Conçu par <b>Damien (Starly Koumba)</b></span>
+    </div>
+  </div>
+  <nav id="nav"></nav>
+  <button class="gear" onclick="formEntreprise()" title="Paramètres entreprise">⚙️</button>
+  <button class="gear" onclick="aPropos()" title="À propos">ℹ️</button>
+</header>
+
+<main><div id="view"></div></main>
+
+<!-- ZONE BASSE : CRÉDIT + FILMSTRIP -->
+<div class="bottom-zone">
+  <div class="credit-bar">
+    <span class="app-name">📊 DM compta 241</span>
+    <span class="sep">•</span>
+    <span>Gestion de dépôt de boissons</span>
+    <span class="sep">•</span>
+    <span>Conçu avec <span class="heart">❤</span> par <span class="author">Damien (Starly Koumba)</span></span>
+  </div>
+  <div class="filmstrip" id="filmstrip"><div class="track" id="stripTrack"></div></div>
+</div>
+
+<!-- MODALE -->
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <h3 id="m-title"></h3>
+    <div id="m-body"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn primary" id="m-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DM compta 241
+   Application de gestion de dépôt de boissons
+   Conçu par Damien (Starly Koumba)
+============================================================ */
+
+const APP = {
+  nom: 'DM compta 241',
+  auteur: 'Damien (Starly Koumba)',
+  version: '1.0.0',
+  annee: new Date().getFullYear(),
+};
+
+const CAT_RECETTES = ['Vente comptoir','Vente livraison','Paiement client','Autre recette'];
+const CAT_DEPENSES = ['Achat marchandises','Carburant','Salaires','Loyer','Électricité/Eau',
+  'Entretien véhicule','Taxes/Impôts','Emballages/Casiers','Téléphone/Internet','Autre dépense'];
+const MODES = ['Espèces','Mobile Money','Virement','Chèque'];
+
+const DB = {
+  key:'dmcompta241_v1', d:null,
+  load(){
+    try{ this.d = JSON.parse(localStorage.getItem(this.key)); }catch(e){ this.d = null; }
+    if(!this.d) this.d = { entreprise:null, produits:[], clients:[], zones:[],
+      fournisseurs:[], vehicules:[], personnel:[], mouvements:[], livraisons:[],
+      transactions:[], factures:[] };
+    return this.d;
+  },
+  save(){ localStorage.setItem(this.key, JSON.stringify(this.d)); }
+};
+
+const esc  = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid  = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4);
+const num  = n => new Intl.NumberFormat('fr-FR').format(Math.round(n||0));
+const money= n => num(n) + ' ' + (DB.d.entreprise?.devise || 'FCFA');
+const today= () => new Date().toISOString().slice(0,10);
+const byId = (t,id) => (DB.d[t]||[]).find(x => x.id === id);
+const mois = () => today().slice(0,7);
+const dateFr = d => d ? d.split('-').reverse().join('/') : '—';
+
+function stockDe(pid){
+  return DB.d.mouvements.filter(m => m.produitId === pid)
+    .reduce((s,m) => s + (m.type === 'sortie' ? -m.quantite : m.quantite), 0);
+}
+function valorisationStock(){
+  return DB.d.produits.reduce((s,p) => s + stockDe(p.id) * (p.prixAchat||0), 0);
+}
+function totalFacture(f){ return f.lignes.reduce((s,l) => s + l.quantite * l.prixUnitaire, 0); }
+function totalTTCFacture(f){
+  const ht = totalFacture(f);
+  return ht + ht * ((f.tva ?? DB.d.entreprise?.tva ?? 0) / 100);
+}
+function payeFacture(f){ return (f.paiements||[]).reduce((s,p) => s + p.montant, 0); }
+function statutFacture(f){
+  const ttc = totalTTCFacture(f), paye = payeFacture(f);
+  if(paye <= 0) return 'impayee';
+  if(paye >= ttc - 1) return 'payee';
+  return 'partielle';
+}
+function kpisFinances(){
+  const tx = DB.d.transactions, m = mois();
+  const caMois  = tx.filter(t => t.type==='recette' && t.date.startsWith(m)).reduce((s,t)=>s+t.montant,0);
+  const depMois = tx.filter(t => t.type==='depense' && t.date.startsWith(m)).reduce((s,t)=>s+t.montant,0);
+  const tresorerie = tx.reduce((s,t) => s + (t.type==='recette' ? t.montant : -t.montant), 0);
+  const creances = DB.d.factures.reduce((s,f) => s + (totalTTCFacture(f) - payeFacture(f)), 0);
+  return { caMois, depMois, resultatMois: caMois - depMois, tresorerie, creances };
+}
+
+/* ============================================================
+   NAVIGATION
+============================================================ */
+const TABS = [
+  ['dashboard',    'Tableau de bord'],
+  ['stock',        'Stock'],
+  ['mouvements',   'Mouvements'],
+  ['livraisons',   'Livraisons'],
+  ['programme',    'Programme'],
+  ['clients',      'Clients'],
+  ['fournisseurs', 'Fournisseurs'],
+  ['zones',        'Zones'],
+  ['finances',     'Finances'],
+  ['flotte',       'Flotte'],
+  ['rapports',     'Rapports'],
+];
+let currentTab = 'dashboard';
+let finSubTab  = 'apercu';
+
+function renderNav(){
+  document.getElementById('nav').innerHTML = TABS.map(([k,l]) =>
+    `<button class="${k===currentTab?'active':''}" onclick="go('${k}')">${l}</button>`
+  ).join('');
+}
+function go(tab){ currentTab=tab; renderNav(); render(); window.scrollTo(0,0); }
+function render(){ document.getElementById('view').innerHTML = VIEWS[currentTab](); }
+
+/* ============================================================
+   MODALE
+============================================================ */
+function openModal(title, bodyHTML, onSave, saveLabel){
+  document.getElementById('m-title').textContent = title;
+  document.getElementById('m-body').innerHTML = bodyHTML;
+  const btn = document.getElementById('m-save');
+  btn.textContent = saveLabel || 'Enregistrer';
+  btn.onclick = () => { if(onSave()) closeModal(); };
+  document.getElementById('modal').classList.remove('hidden');
+}
+function closeModal(){ document.getElementById('modal').classList.add('hidden'); }
+
+/* ============================================================
+   À PROPOS
+============================================================ */
+function aPropos(){
+  openModal('À propos', `
+    <div class="about-credit" style="border:none;padding-top:0">
+      <div class="logo-big">📊</div>
+      <div style="font-size:20px;font-weight:700;color:var(--acc);letter-spacing:.5px">DM compta 241</div>
+      <div style="color:var(--muted);margin-top:4px">Application de gestion de dépôt de boissons</div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:2px">Version ${APP.version} · ${APP.annee}</div>
+    </div>
+
+    <div style="background:var(--panel2);border-radius:10px;padding:14px;margin-top:16px;font-size:12.5px;line-height:1.7;color:var(--muted)">
+      <b style="color:var(--txt)">Modules inclus :</b><br>
+      • Gestion du stock (entrées / sorties / ajustements)<br>
+      • Livraisons & programme de tournées par zone<br>
+      • Clients, fournisseurs, zones de livraison<br>
+      • Finances complètes (recettes, dépenses, caisse, factures, créances)<br>
+      • Flotte (véhicules, personnel, chauffeurs)<br>
+      • Rapports et statistiques
+    </div>
+
+    <div class="about-credit">
+      <div style="font-size:11px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">Conçu et développé par</div>
+      <div class="name">Damien (Starly Koumba)</div>
+      <div style="margin-top:6px;font-size:11px">© ${APP.annee} — Tous droits réservés</div>
+    </div>
+  `, () => true, 'Fermer');
+}
+
+/* ============================================================
+   VUES
+============================================================ */
+const VIEWS = {};
+
+VIEWS.dashboard = () => {
+  const d = DB.d;
+  const k = kpisFinances();
+  const alertes = d.produits.filter(p => stockDe(p.id) <= (p.seuil||0));
+  const livJour = d.livraisons.filter(l => l.datePrevue === today() && l.statut !== 'annulee');
+  const derniers = [...d.mouvements].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+  return `
+    <div class="cards">
+      <div class="card info"><div class="lbl">CA du mois</div><div class="val">${money(k.caMois)}</div></div>
+      <div class="card danger"><div class="lbl">Dépenses du mois</div><div class="val">${money(k.depMois)}</div></div>
+      <div class="card ${k.resultatMois>=0?'ok':'danger'}"><div class="lbl">Résultat du mois</div><div class="val">${money(k.resultatMois)}</div></div>
+      <div class="card gold"><div class="lbl">Trésorerie</div><div class="val">${money(k.tresorerie)}</div></div>
+      <div class="card"><div class="lbl">Valeur du stock</div><div class="val">${money(valorisationStock())}</div></div>
+      <div class="card ${k.creances>0?'warn':''}"><div class="lbl">Créances clients</div><div class="val">${money(k.creances)}</div></div>
+    </div>
+    ${alertes.length ? `<div class="section">
+      <h2 style="color:var(--danger)">⚠ Stock sous le seuil (${alertes.length})</h2>
+      <table><thead><tr><th>Produit</th><th>Stock</th><th>Seuil</th><th></th></tr></thead><tbody>
+      ${alertes.slice(0,8).map(p => `<tr>
+        <td>${esc(p.nom)}</td>
+        <td class="out"><b>${num(stockDe(p.id))}</b></td>
+        <td>${num(p.seuil)}</td>
+        <td><button class="btn mini" onclick="mouvementRapide('${p.id}','entree')">+ Réappro</button></td>
+      </tr>`).join('')}</tbody></table></div>` : ''}
+    <div class="section">
+      <h2>🚚 Livraisons du jour</h2>
+      ${livJour.length ? `<table><thead><tr><th>Réf</th><th>Client</th><th>Zone</th><th>Montant</th><th>Statut</th></tr></thead><tbody>
+        ${livJour.map(l => {
+          const t = l.lignes.reduce((s,x)=>s+x.quantite*x.prixUnitaire,0);
+          return `<tr>
+            <td><b>${esc(l.ref)}</b></td>
+            <td>${esc(byId('clients',l.clientId)?.nom||'—')}</td>
+            <td>${esc(byId('zones',l.zoneId)?.nom||'—')}</td>
+            <td>${money(t)}</td>
+            <td><span class="badge b-${l.statut}">${l.statut.replace('_',' ')}</span></td>
+          </tr>`;
+        }).join('')}</tbody></table>` : '<div class="empty">Aucune livraison prévue aujourd\'hui</div>'}
+    </div>
+    <div class="section">
+      <h2>📋 Derniers mouvements</h2>
+      ${derniers.length ? `<table><thead><tr><th>Date</th><th>Type</th><th>Produit</th><th>Qté</th><th>Motif</th></tr></thead><tbody>
+        ${derniers.map(m => `<tr>
+          <td>${dateFr(m.date)}</td>
+          <td><span class="badge b-${m.type}">${m.type}</span></td>
+          <td>${esc(byId('produits',m.produitId)?.nom||'—')}</td>
+          <td>${m.type==='sortie'?'-':'+'}${num(m.quantite)}</td>
+          <td>${esc(m.motif||'')}</td>
+        </tr>`).join('')}</tbody></table>` : '<div class="empty">Aucun mouvement</div>'}
+    </div>`;
+};
+
+VIEWS.stock = () => {
+  const rows = DB.d.produits.map(p => {
+    const s = stockDe(p.id);
+    const cls = s<=0?'out':s<=(p.seuil||0)?'low':'ok';
+    return `<tr>
+      <td><b>${esc(p.nom)}</b><br><span style="color:var(--muted);font-size:11.5px">${esc(p.categorie||'')} ${p.contenance?'· '+esc(p.contenance):''}</span></td>
+      <td class="${cls}"><b>${num(s)}</b> <span style="color:var(--muted)">${esc(p.unite||'')}</span></td>
+      <td>${num(p.seuil)}</td>
+      <td>${money(p.prixVente)}</td>
+      <td>${money(s*(p.prixAchat||0))}</td>
+      <td style="white-space:nowrap">
+        <button class="btn mini" onclick="mouvementRapide('${p.id}','entree')">+</button>
+        <button class="btn mini" onclick="mouvementRapide('${p.id}','sortie')">−</button>
+        <button class="btn mini" onclick="formProduit('${p.id}')">✎</button>
+        <button class="btn mini danger" onclick="supprimer('produits','${p.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="toolbar"><h2 style="margin:0">Stock</h2><div class="spacer"></div>
+      <button class="btn primary" onclick="formProduit()">+ Nouveau produit</button></div>
+    ${DB.d.produits.length ? `<table><thead><tr><th>Produit</th><th>Stock</th><th>Seuil</th><th>Prix vente</th><th>Valeur achat</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+    : '<div class="empty">Aucun produit. Ajoute-en un pour commencer.</div>'}`;
+};
+
+VIEWS.mouvements = () => {
+  const ms = [...DB.d.mouvements].sort((a,b)=>b.date.localeCompare(a.date));
+  return `
+    <div class="toolbar"><h2 style="margin:0">Mouvements</h2><div class="spacer"></div>
+      <button class="btn primary" onclick="formMouvement()">+ Nouveau mouvement</button></div>
+    ${ms.length ? `<table><thead><tr><th>Date</th><th>Type</th><th>Produit</th><th>Qté</th><th>Motif</th><th>Réf.</th><th></th></tr></thead><tbody>
+      ${ms.map(m => `<tr>
+        <td>${dateFr(m.date)}</td>
+        <td><span class="badge b-${m.type}">${m.type}</span></td>
+        <td>${esc(byId('produits',m.produitId)?.nom||'—')}</td>
+        <td>${m.type==='sortie'?'-':'+'}${num(m.quantite)}</td>
+        <td>${esc(m.motif||'')}</td>
+        <td style="color:var(--muted)">${esc(m.ref||'')}</td>
+        <td><button class="btn mini danger" onclick="supprimer('mouvements','${m.id}')">✕</button></td>
+      </tr>`).join('')}</tbody></table>` : '<div class="empty">Aucun mouvement</div>'}`;
+};
+
+VIEWS.livraisons = () => {
+  const ls = [...DB.d.livraisons].sort((a,b)=>b.datePrevue.localeCompare(a.datePrevue));
+  return `
+    <div class="toolbar"><h2 style="margin:0">Livraisons</h2><div class="spacer"></div>
+      <button class="btn primary" onclick="formLivraison()">+ Nouvelle livraison</button></div>
+    ${ls.length ? `<table><thead><tr>
+      <th>Réf</th><th>Client</th><th>Zone</th><th>Date</th><th>Articles</th><th>Montant</th><th>Statut</th><th></th>
+    </tr></thead><tbody>
+    ${ls.map(l => {
+      const t = l.lignes.reduce((s,x)=>s+x.quantite*x.prixUnitaire,0);
+      return `<tr>
+        <td><b>${esc(l.ref)}</b></td>
+        <td>${esc(byId('clients',l.clientId)?.nom||'—')}</td>
+        <td>${esc(byId('zones',l.zoneId)?.nom||'—')}</td>
+        <td>${dateFr(l.datePrevue)}</td>
+        <td>${l.lignes.length}</td>
+        <td>${money(t)}</td>
+        <td><select onchange="changerStatut('${l.id}',this.value)" style="padding:4px 8px;font-size:12px">
+          ${['planifiee','en_cours','livree','annulee'].map(s => `<option value="${s}" ${l.statut===s?'selected':''}>${s.replace('_',' ')}</option>`).join('')}
+        </select></td>
+        <td style="white-space:nowrap">
+          <button class="btn mini" onclick="voirLivraison('${l.id}')">👁</button>
+          <button class="btn mini gold" onclick="facturerLivraison('${l.id}')">💵</button>
+          <button class="btn mini danger" onclick="supprimer('livraisons','${l.id}')">✕</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table>` : '<div class="empty">Aucune livraison</div>'}`;
+};
+
+VIEWS.programme = () => {
+  const actives = DB.d.livraisons.filter(l => l.statut !== 'annulee' && l.statut !== 'livree');
+  const parDate = {};
+  actives.forEach(l => (parDate[l.datePrevue] = parDate[l.datePrevue]||[]).push(l));
+  const dates = Object.keys(parDate).sort();
+  if(!dates.length) return '<div class="empty">Aucune tournée planifiée</div>';
+  return dates.map(date => {
+    const parZone = {};
+    parDate[date].forEach(l => {
+      const z = byId('zones', l.zoneId)?.nom || 'Zone non définie';
+      (parZone[z] = parZone[z]||[]).push(l);
+    });
+    return `<div class="section">
+      <h2>📅 ${date===today()?"Aujourd'hui — ":''}${dateFr(date)}</h2>
+      ${Object.entries(parZone).map(([zone, lvs]) => `
+        <div style="margin:14px 0 6px;color:var(--info);font-weight:600">📍 ${esc(zone)}</div>
+        <table><thead><tr><th>Réf</th><th>Client</th><th>Adresse</th><th>Articles</th><th>Statut</th></tr></thead><tbody>
+        ${lvs.map(l => `<tr>
+          <td>${esc(l.ref)}</td>
+          <td>${esc(byId('clients',l.clientId)?.nom||'—')}</td>
+          <td>${esc(byId('clients',l.clientId)?.adresse||'—')}</td>
+          <td>${l.lignes.length}</td>
+          <td><span class="badge b-${l.statut}">${l.statut.replace('_',' ')}</span></td>
+        </tr>`).join('')}</tbody></table>`).join('')}
+    </div>`;
+  }).join('');
+};
+
+VIEWS.clients = () => `
+  <div class="toolbar"><h2 style="margin:0">Clients</h2><div class="spacer"></div>
+    <button class="btn primary" onclick="formClient()">+ Nouveau client</button></div>
+  ${DB.d.clients.length ? `<table><thead><tr><th>Nom</th><th>Téléphone</th><th>Adresse</th><th>Zone</th><th>Solde dû</th><th></th></tr></thead><tbody>
+    ${DB.d.clients.map(c => {
+      const du = DB.d.factures.filter(f => f.clientId === c.id)
+        .reduce((s,f) => s + (totalTTCFacture(f) - payeFacture(f)), 0);
+      return `<tr>
+        <td><b>${esc(c.nom)}</b></td>
+        <td>${esc(c.telephone||'—')}</td>
+        <td>${esc(c.adresse||'—')}</td>
+        <td>${esc(byId('zones',c.zoneId)?.nom||'—')}</td>
+        <td class="${du>0?'warn':''}">${money(du)}</td>
+        <td style="white-space:nowrap">
+          <button class="btn mini" onclick="formClient('${c.id}')">✎</button>
+          <button class="btn mini danger" onclick="supprimer('clients','${c.id}')">✕</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table>` : '<div class="empty">Aucun client</div>'}`;
+
+VIEWS.fournisseurs = () => `
+  <div class="toolbar"><h2 style="margin:0">Fournisseurs</h2><div class="spacer"></div>
+    <button class="btn primary" onclick="formFournisseur()">+ Nouveau fournisseur</button></div>
+  ${DB.d.fournisseurs.length ? `<table><thead><tr><th>Nom</th><th>Contact</th><th>Téléphone</th><th>Produits</th><th>Achats (mois)</th><th></th></tr></thead><tbody>
+    ${DB.d.fournisseurs.map(f => {
+      const achats = DB.d.transactions.filter(t =>
+        t.type==='depense' && t.fournisseurId===f.id && t.date.startsWith(mois())
+      ).reduce((s,t)=>s+t.montant,0);
+      return `<tr>
+        <td><b>${esc(f.nom)}</b></td>
+        <td>${esc(f.contact||'—')}</td>
+        <td>${esc(f.telephone||'—')}</td>
+        <td style="color:var(--muted)">${esc(f.produits||'—')}</td>
+        <td>${money(achats)}</td>
+        <td style="white-space:nowrap">
+          <button class="btn mini" onclick="formFournisseur('${f.id}')">✎</button>
+          <button class="btn mini danger" onclick="supprimer('fournisseurs','${f.id}')">✕</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table>` : '<div class="empty">Aucun fournisseur</div>'}`;
+
+VIEWS.zones = () => `
+  <div class="toolbar"><h2 style="margin:0">Zones de livraison</h2><div class="spacer"></div>
+    <button class="btn primary" onclick="formZone()">+ Nouvelle zone</button></div>
+  ${DB.d.zones.length ? `<table><thead><tr><th>Zone</th><th>Description</th><th>Frais</th><th>Clients</th><th></th></tr></thead><tbody>
+    ${DB.d.zones.map(z => `<tr>
+      <td><b>${esc(z.nom)}</b></td>
+      <td>${esc(z.description||'—')}</td>
+      <td>${money(z.fraisLivraison)}</td>
+      <td>${DB.d.clients.filter(c => c.zoneId===z.id).length}</td>
+      <td style="white-space:nowrap">
+        <button class="btn mini" onclick="formZone('${z.id}')">✎</button>
+        <button class="btn mini danger" onclick="supprimer('zones','${z.id}')">✕</button>
+      </td>
+    </tr>`).join('')}</tbody></table>` : '<div class="empty">Aucune zone</div>'}`;
+
+VIEWS.finances = () => {
+  const subs = [
+    ['apercu',   "Vue d'ensemble"],
+    ['recettes', 'Recettes'],
+    ['depenses', 'Dépenses'],
+    ['caisse',   'Caisse'],
+    ['factures', 'Factures'],
+    ['creances', 'Créances'],
+  ];
+  const subNav = `<div class="subtabs">${subs.map(([k,l]) =>
+    `<button class="${finSubTab===k?'active':''}" onclick="finSubTab='${k}';render()">${l}</button>`
+  ).join('')}</div>`;
+  return subNav + (FIN_VIEWS[finSubTab] || (() => ''));
+};
+
+const FIN_VIEWS = {};
+
+FIN_VIEWS.apercu = () => {
+  const k = kpisFinances();
+  const tx = [...DB.d.transactions].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+  const depParCat = {};
+  DB.d.transactions.filter(t => t.type==='depense' && t.date.startsWith(mois()))
+    .forEach(t => depParCat[t.categorie] = (depParCat[t.categorie]||0) + t.montant);
+  const maxDep = Math.max(1, ...Object.values(depParCat));
+  return `
+    <div class="cards">
+      <div class="card ok"><div class="lbl">CA du mois</div><div class="val">${money(k.caMois)}</div></div>
+      <div class="card danger"><div class="lbl">Dépenses du mois</div><div class="val">${money(k.depMois)}</div></div>
+      <div class="card ${k.resultatMois>=0?'ok':'danger'}"><div class="lbl">Résultat</div><div class="val">${money(k.resultatMois)}</div>
+        <div class="sub">${k.caMois?(k.resultatMois/k.caMois*100).toFixed(1):0}% de marge nette</div></div>
+      <div class="card gold"><div class="lbl">Trésorerie</div><div class="val">${money(k.tresorerie)}</div></div>
+      <div class="card warn"><div class="lbl">Créances</div><div class="val">${money(k.creances)}</div></div>
+    </div>
+    <div class="section">
+      <h2>📊 Dépenses par catégorie — ${mois()}</h2>
+      ${Object.keys(depParCat).length ? Object.entries(depParCat).sort((a,b)=>b[1]-a[1]).map(([cat,v]) => `
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12.5px">
+            <span>${esc(cat)}</span><span>${money(v)}</span>
+          </div>
+          <div class="progressbar"><div style="width:${v/maxDep*100}%"></div></div>
+        </div>`).join('') : '<div class="empty">Aucune dépense ce mois-ci</div>'}
+    </div>
+    <div class="section">
+      <h2>💳 Dernières transactions</h2>
+      ${tx.length ? `<table><thead><tr><th>Date</th><th>Type</th><th>Catégorie</th><th>Libellé</th><th>Mode</th><th>Montant</th></tr></thead><tbody>
+        ${tx.map(t => `<tr>
+          <td>${dateFr(t.date)}</td>
+          <td><span class="badge b-${t.type}">${t.type}</span></td>
+          <td>${esc(t.categorie)}</td>
+          <td>${esc(t.description||'—')}</td>
+          <td style="color:var(--muted)">${esc(t.mode||'')}</td>
+          <td style="color:${t.type==='recette'?'var(--acc)':'var(--danger)'};font-weight:600">
+            ${t.type==='recette'?'+':'-'}${money(t.montant)}</td>
+        </tr>`).join('')}</tbody></table>` : '<div class="empty">Aucune transaction</div>'}
+    </div>`;
+};
+
+FIN_VIEWS.recettes = () => {
+  const list = DB.d.transactions.filter(t => t.type==='recette').sort((a,b)=>b.date.localeCompare(a.date));
+  const tot = list.reduce((s,t)=>s+t.montant,0);
+  return `
+    <div class="toolbar"><h2 style="margin:0">Recettes</h2>
+      <span style="color:var(--muted)">Total : <b style="color:var(--acc)">${money(tot)}</b></span>
+      <div class="spacer"></div>
+      <button class="btn primary" onclick="formTransaction('recette')">+ Nouvelle recette</button></div>
+    ${list.length ? `<table><thead><tr><th>Date</th><th>Catégorie</th><th>Libellé</th><th>Client</th><th>Mode</th><th>Montant</th><th></th></tr></thead><tbody>
+      ${list.map(t => `<tr>
+        <td>${dateFr(t.date)}</td>
+        <td>${esc(t.categorie)}</td>
+        <td>${esc(t.description||'—')}</td>
+        <td>${esc(byId('clients',t.clientId)?.nom||'—')}</td>
+        <td style="color:var(--muted)">${esc(t.mode||'')}</td>
+        <td class="ok"><b>+${money(t.montant)}</b></td>
+        <td><button class="btn mini danger" onclick="supprimer('transactions','${t.id}')">✕</button></td>
+      </tr>`).join('')}</tbody></table>` : '<div class="empty">Aucune recette enregistrée</div>'}`;
+};
+
+FIN_VIEWS.depenses = () => {
+  const list = DB.d.transactions.filter(t => t.type==='depense').sort((a,b)=>b.date.localeCompare(a.date));
+  const tot = list.reduce((s,t)=>s+t.montant,0);
+  return `
+    <div class="toolbar"><h2 style="margin:0">Dépenses</h2>
+      <span style="color:var(--muted)">Total : <b style="color:var(--danger)">${money(tot)}</b></span>
+      <div class="spacer"></div>
+      <button class="btn primary" onclick="formTransaction('depense')">+ Nouvelle dépense</button></div>
+    ${list.length ? `<table><thead><tr><th>Date</th><th>Catégorie</th><th>Libellé</th><th>Fournisseur</th><th>Mode</th><th>Montant</th><th></th></tr></thead><tbody>
+      ${list.map(t => `<tr>
+        <td>${dateFr(t.date)}</td>
+        <td>${esc(t.categorie)}</td>
+        <td>${esc(t.description||'—')}</td>
+        <td>${esc(byId('fournisseurs',t.fournisseurId)?.nom||'—')}</td>
+        <td style="color:var(--muted)">${esc(t.mode||'')}</td>
+        <td class="out"><b>-${money(t.montant)}</b></td>
+        <td><button class="btn mini danger" onclick="supprimer('transactions','${t.id}')">✕</button></td>
+      </tr>`).join('')}</tbody></table>` : '<div class="empty">Aucune dépense enregistrée</div>'}`;
+};
+
+FIN_VIEWS.caisse = () => {
+  const parMode = {};
+  DB.d.transactions.forEach(t => {
+    const m = t.mode || 'Espèces';
+    parMode[m] = parMode[m] || { entree:0, sortie:0 };
+    if(t.type==='recette') parMode[m].entree += t.montant;
+    else parMode[m].sortie += t.montant;
+  });
+  const total = Object.values(parMode).reduce((s,v)=>s+v.entree-v.sortie,0);
+  return `
+    <div class="cards">
+      <div class="card gold"><div class="lbl">Solde caisse global</div><div class="val">${money(total)}</div></div>
+    </div>
+    <div class="section">
+      <h2>💼 Répartition par mode de paiement</h2>
+      <table><thead><tr><th>Mode</th><th>Entrées</th><th>Sorties</th><th>Solde</th></tr></thead><tbody>
+        ${Object.entries(parMode).map(([m,v]) => `<tr>
+          <td><b>${esc(m)}</b></td>
+          <td class="ok">+${money(v.entree)}</td>
+          <td class="out">-${money(v.sortie)}</td>
+          <td><b>${money(v.entree-v.sortie)}</b></td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>`;
+};
+
+FIN_VIEWS.factures = () => {
+  const list = [...DB.d.factures].sort((a,b)=>b.date.localeCompare(a.date));
+  return `
+    <div class="toolbar"><h2 style="margin:0">Factures</h2><div class="spacer"></div>
+      <button class="btn primary" onclick="formFacture()">+ Nouvelle facture</button></div>
+    ${list.length ? `<table><thead><tr><th>N°</th><th>Date</th><th>Client</th><th>Total TTC</th><th>Payé</th><th>Reste</th><th>Statut</th><th></th></tr></thead><tbody>
+      ${list.map(f => {
+        const ttc = totalTTCFacture(f), paye = payeFacture(f);
+        const st = statutFacture(f);
+        return `<tr>
+          <td><b>${esc(f.numero)}</b></td>
+          <td>${dateFr(f.date)}</td>
+          <td>${esc(byId('clients',f.clientId)?.nom||'—')}</td>
+          <td>${money(ttc)}</td>
+          <td class="ok">${money(paye)}</td>
+          <td class="${ttc-paye>0?'warn':'ok'}">${money(ttc-paye)}</td>
+          <td><span class="badge b-${st}">${st}</span></td>
+          <td style="white-space:nowrap">
+            <button class="btn mini" onclick="voirFacture('${f.id}')">👁</button>
+            ${st!=='payee'?`<button class="btn mini gold" onclick="formPaiement('${f.id}')">💰</button>`:''}
+            <button class="btn mini danger" onclick="supprimer('factures','${f.id}')">✕</button>
+          </td>
+        </tr>`;
+      }).join('')}</tbody></table>` : '<div class="empty">Aucune facture</div>'}`;
+};
+
+FIN_VIEWS.creances = () => {
+  const impayees = DB.d.factures.filter(f => statutFacture(f) !== 'payee');
+  const total = impayees.reduce((s,f) => s + totalTTCFacture(f) - payeFacture(f), 0);
+  return `
+    <div class="cards">
+      <div class="card warn"><div class="lbl">Total créances</div><div class="val">${money(total)}</div></div>
+      <div class="card"><div class="lbl">Factures impayées</div><div class="val">${impayees.length}</div></div>
+    </div>
+    ${impayees.length ? `<table><thead><tr><th>N°</th><th>Client</th><th>Date</th><th>Échéance</th><th>Reste dû</th><th></th></tr></thead><tbody>
+      ${impayees.map(f => {
+        const reste = totalTTCFacture(f) - payeFacture(f);
+        const retard = f.echeance && f.echeance < today();
+        return `<tr>
+          <td><b>${esc(f.numero)}</b></td>
+          <td>${esc(byId('clients',f.clientId)?.nom||'—')}</td>
+          <td>${dateFr(f.date)}</td>
+          <td class="${retard?'out':''}">${dateFr(f.echeance)}</td>
+          <td class="warn"><b>${money(reste)}</b></td>
+          <td><button class="btn mini gold" onclick="formPaiement('${f.id}')">💰 Encaisser</button></td>
+        </tr>`;
+      }).join('')}</tbody></table>` : '<div class="empty">Aucune créance 🎉</div>'}`;
+};
+
+VIEWS.flotte = () => {
+  const v = DB.d.vehicules, p = DB.d.personnel;
+  return `
+    <div class="section">
+      <div class="toolbar"><h2 style="margin:0">🚛 Véhicules</h2><div class="spacer"></div>
+        <button class="btn primary" onclick="formVehicule()">+ Ajouter un véhicule</button></div>
+      ${v.length ? `<table><thead><tr><th>Immatriculation</th><th>Marque / Modèle</th><th>Capacité</th><th>Chauffeur</th><th>État</th><th></th></tr></thead><tbody>
+        ${v.map(x => `<tr>
+          <td><b>${esc(x.immat)}</b></td>
+          <td>${esc(x.marque||'')} ${esc(x.modele||'')}</td>
+          <td>${esc(x.capacite||'—')}</td>
+          <td>${esc(byId('personnel',x.chauffeurId)?.nom||'—')}</td>
+          <td><span class="badge ${x.etat==='actif'?'b-livree':x.etat==='maintenance'?'b-en_cours':'b-annulee'}">${esc(x.etat||'actif')}</span></td>
+          <td style="white-space:nowrap">
+            <button class="btn mini" onclick="formVehicule('${x.id}')">✎</button>
+            <button class="btn mini danger" onclick="supprimer('vehicules','${x.id}')">✕</button>
+          </td>
+        </tr>`).join('')}</tbody></table>` : '<div class="empty">Aucun véhicule</div>'}
+    </div>
+    <div class="section">
+      <div class="toolbar"><h2 style="margin:0">👥 Personnel</h2><div class="spacer"></div>
+        <button class="btn primary" onclick="formPersonnel()">+ Ajouter une personne</button></div>
+      ${p.length ? `<table><thead><tr><th>Nom</th><th>Rôle</th><th>Téléphone</th><th>Salaire</th><th></th></tr></thead><tbody>
+        ${p.map(x => `<tr>
+          <td><b>${esc(x.nom)}</b></td>
+          <td>${esc(x.role||'—')}</td>
+          <td>${esc(x.telephone||'—')}</td>
+          <td>${money(x.salaire)}</td>
+          <td style="white-space:nowrap">
+            <button class="btn mini" onclick="formPersonnel('${x.id}')">✎</button>
+            <button class="btn mini danger" onclick="supprimer('personnel','${x.id}')">✕</button>
+          </td>
+        </tr>`).join('')}</tbody></table>` : '<div class="empty">Aucun employé</div>'}
+    </div>`;
+};
+
+VIEWS.rapports = () => {
+  const jours = [];
+  for(let i=29;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    jours.push(d.toISOString().slice(0,10));
+  }
+  const ventesParJour = jours.map(d =>
+    DB.d.transactions.filter(t => t.type==='recette' && t.date===d).reduce((s,t)=>s+t.montant,0)
+  );
+  const maxV = Math.max(1, ...ventesParJour);
+  const topProd = {};
+  DB.d.mouvements.filter(m => m.type==='sortie' && jours.includes(m.date))
+    .forEach(m => topProd[m.produitId] = (topProd[m.produitId]||0) + m.quantite);
+  const topProdArr = Object.entries(topProd).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const topCli = {};
+  DB.d.transactions.filter(t => t.type==='recette' && jours.includes(t.date) && t.clientId)
+    .forEach(t => topCli[t.clientId] = (topCli[t.clientId]||0) + t.montant);
+  const topCliArr = Object.entries(topCli).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const depParCat = {};
+  DB.d.transactions.filter(t => t.type==='depense' && jours.includes(t.date))
+    .forEach(t => depParCat[t.categorie] = (depParCat[t.categorie]||0) + t.montant);
+  const ca30 = ventesParJour.reduce((a,b)=>a+b,0);
+  const dep30 = Object.values(depParCat).reduce((a,b)=>a+b,0);
+
+  return `
+    <div class="cards">
+      <div class="card ok"><div class="lbl">CA 30 jours</div><div class="val">${money(ca30)}</div></div>
+      <div class="card danger"><div class="lbl">Dépenses 30 jours</div><div class="val">${money(dep30)}</div></div>
+      <div class="card ${ca30-dep30>=0?'ok':'danger'}"><div class="lbl">Résultat 30 jours</div><div class="val">${money(ca30-dep30)}</div></div>
+    </div>
+    <div class="section">
+      <h2>📈 Ventes des 30 derniers jours</h2>
+      <div class="barchart">
+        ${ventesParJour.map((v,i) => `<div class="bar" style="height:${v/maxV*100}%" data-v="${jours[i]} : ${money(v)}"></div>`).join('')}
+      </div>
+    </div>
+    <div class="grid2" style="gap:16px">
+      <div class="section">
+        <h2>🏆 Top 5 produits (30j)</h2>
+        ${topProdArr.length ? topProdArr.map(([pid,q],i) => `
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)">
+            <span><b style="color:var(--muted)">#${i+1}</b> ${esc(byId('produits',pid)?.nom||'—')}</span>
+            <b>${num(q)}</b>
+          </div>`).join('') : '<div class="empty">Aucune vente</div>'}
+      </div>
+      <div class="section">
+        <h2>💎 Top 5 clients (30j)</h2>
+        ${topCliArr.length ? topCliArr.map(([cid,v],i) => `
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)">
+            <span><b style="color:var(--muted)">#${i+1}</b> ${esc(byId('clients',cid)?.nom||'—')}</span>
+            <b>${money(v)}</b>
+          </div>`).join('') : '<div class="empty">Aucune vente</div>'}
+      </div>
+    </div>
+    <div class="section">
+      <h2>📊 Dépenses 30j par catégorie</h2>
+      ${Object.keys(depParCat).length ? Object.entries(depParCat).sort((a,b)=>b[1]-a[1]).map(([cat,v]) => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)">
+          <span>${esc(cat)}</span><b>${money(v)}</b>
+        </div>`).join('') : '<div class="empty">Aucune dépense</div>'}
+    </div>`;
+};
+
+/* ============================================================
+   FORMULAIRES
+============================================================ */
+function formEntreprise(){
+  const e = DB.d.entreprise || {};
+  openModal('Paramètres de l\'entreprise', `
+    <label>Nom de l'entreprise <input id="f-nom" value="${esc(e.nom||'')}" placeholder="Dépôt Central SARL"></label>
+    <label>Type d'activité
+      <select id="f-type">
+        ${['Dépôt de boissons','Grossiste boissons','Demi-grossiste','Distributeur','Supermarché','Autre']
+          .map(t => `<option ${e.type===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+    </label>
+    <label>Slogan / Description <input id="f-slogan" value="${esc(e.slogan||'')}" placeholder="Votre partenaire en boissons depuis 2010"></label>
+    <div class="grid2">
+      <label>Téléphone <input id="f-tel" value="${esc(e.telephone||'')}"></label>
+      <label>Email <input id="f-email" value="${esc(e.email||'')}"></label>
+      <label>Adresse <input id="f-adresse" value="${esc(e.adresse||'')}"></label>
+      <label>Ville <input id="f-ville" value="${esc(e.ville||'')}"></label>
+      <label>RCCM <input id="f-rccm" value="${esc(e.rccm||'')}"></label>
+      <label>NIF / IFU <input id="f-nif" value="${esc(e.nif||'')}"></label>
+      <label>Devise <input id="f-devise" value="${esc(e.devise||'FCFA')}"></label>
+      <label>TVA (%) <input id="f-tva" type="number" value="${e.tva||0}"></label>
+    </div>
+    <div class="about-credit" style="text-align:left;font-size:11.5px">
+      <b style="color:var(--txt)">${APP.nom}</b> — v${APP.version}<br>
+      Conçu par <span class="name">Damien (Starly Koumba)</span>
+    </div>
+  `, () => {
+    const nom = document.getElementById('f-nom').value.trim();
+    if(!nom) return alert('Le nom est obligatoire');
+    DB.d.entreprise = {
+      nom,
+      type: document.getElementById('f-type').value,
+      slogan: document.getElementById('f-slogan').value.trim(),
+      telephone: document.getElementById('f-tel').value.trim(),
+      email: document.getElementById('f-email').value.trim(),
+      adresse: document.getElementById('f-adresse').value.trim(),
+      ville: document.getElementById('f-ville').value.trim(),
+      rccm: document.getElementById('f-rccm').value.trim(),
+      nif: document.getElementById('f-nif').value.trim(),
+      devise: document.getElementById('f-devise').value.trim() || 'FCFA',
+      tva: +document.getElementById('f-tva').value || 0,
+    };
+    DB.save(); refreshBrand(); render(); return true;
+  });
+}
+
+function refreshBrand(){
+  const e = DB.d.entreprise;
+  document.getElementById('brandName').textContent = e?.nom || APP.nom;
+  document.getElementById('brandType').textContent = e?.type || 'Configuration requise…';
+  document.title = (e?.nom || APP.nom) + ' — Gestion';
+}
+
+function formProduit(id){
+  const p = id ? byId('produits',id) : {};
+  openModal(id?'Modifier le produit':'Nouveau produit', `
+    <label>Nom <input id="f-nom" value="${esc(p.nom||'')}" placeholder="Coca-Cola 33cl"></label>
+    <div class="grid2">
+      <label>Catégorie <input id="f-cat" value="${esc(p.categorie||'')}" placeholder="Soda / Bière / Eau"></label>
+      <label>Contenance <input id="f-cont" value="${esc(p.contenance||'')}" placeholder="33cl, 50cl, 1L"></label>
+      <label>Unité <input id="f-unite" value="${esc(p.unite||'casier')}"></label>
+      <label>Seuil d'alerte <input id="f-seuil" type="number" value="${p.seuil||0}"></label>
+      <label>Prix d'achat <input id="f-pa" type="number" value="${p.prixAchat||0}"></label>
+      <label>Prix de vente <input id="f-pv" type="number" value="${p.prixVente||0}"></label>
+    </div>`, () => {
+    const nom = document.getElementById('f-nom').value.trim();
+    if(!nom) return alert('Nom obligatoire');
+    const data = { nom,
+      categorie: document.getElementById('f-cat').value.trim(),
+      contenance: document.getElementById('f-cont').value.trim(),
+      unite: document.getElementById('f-unite').value.trim(),
+      seuil: +document.getElementById('f-seuil').value||0,
+      prixAchat: +document.getElementById('f-pa').value||0,
+      prixVente: +document.getElementById('f-pv').value||0 };
+    if(id) Object.assign(byId('produits',id), data);
+    else DB.d.produits.push({ id: uid(), ...data });
+    DB.save(); render(); return true;
+  });
+}
+
+function formZone(id){
+  const z = id ? byId('zones',id) : {};
+  openModal(id?'Modifier la zone':'Nouvelle zone', `
+    <label>Nom <input id="f-nom" value="${esc(z.nom||'')}" placeholder="Centre-ville"></label>
+    <label>Description <input id="f-desc" value="${esc(z.description||'')}"></label>
+    <label>Frais de livraison <input id="f-frais" type="number" value="${z.fraisLivraison||0}"></label>
+  `, () => {
+    const nom = document.getElementById('f-nom').value.trim();
+    if(!nom) return alert('Nom obligatoire');
+    const data = { nom, description: document.getElementById('f-desc').value.trim(),
+      fraisLivraison: +document.getElementById('f-frais').value||0 };
+    if(id) Object.assign(byId('zones',id), data);
+    else DB.d.zones.push({ id: uid(), ...data });
+    DB.save(); render(); return true;
+  });
+}
+
+function formClient(id){
+  const c = id ? byId('clients',id) : {};
+  openModal(id?'Modifier le client':'Nouveau client', `
+    <label>Nom / Raison sociale <input id="f-nom" value="${esc(c.nom||'')}"></label>
+    <div class="grid2">
+      <label>Téléphone <input id="f-tel" value="${esc(c.telephone||'')}"></label>
+      <label>Zone
+        <select id="f-zone"><option value="">— Aucune —</option>
+          ${DB.d.zones.map(z => `<option value="${z.id}" ${c.zoneId===z.id?'selected':''}>${esc(z.nom)}</option>`).join('')}
+        </select>
+      </label>
+    </div>
+    <label>Adresse <input id="f-adr" value="${esc(c.adresse||'')}"></label>
+  `, () => {
+    const nom = document.getElementById('f-nom').value.trim();
+    if(!nom) return alert('Nom obligatoire');
+    const data = { nom, telephone: document.getElementById('f-tel').value.trim(),
+      adresse: document.getElementById('f-adr').value.trim(),
+      zoneId: document.getElementById('f-zone').value };
+    if(id) Object.assign(byId('clients',id), data);
+    else DB.d.clients.push({ id: uid(), ...data });
+    DB.save(); render(); return true;
+  });
+}
+
+function formFournisseur(id){
+  const f = id ? byId('fournisseurs',id) : {};
+  openModal(id?'Modifier le fournisseur':'Nouveau fournisseur', `
+    <label>Nom <input id="f-nom" value="${esc(f.nom||'')}"></label>
+    <div class="grid2">
+      <label>Contact <input id="f-contact" value="${esc(f.contact||'')}"></label>
+      <label>Téléphone <input id="f-tel" value="${esc(f.telephone||'')}"></label>
+    </div>
+    <label>Adresse <input id="f-adr" value="${esc(f.adresse||'')}"></label>
+    <label>Produits fournis <input id="f-prod" value="${esc(f.produits||'')}" placeholder="Sodas, bières, eaux"></label>
+  `, () => {
+    const nom = document.getElementById('f-nom').value.trim();
+    if(!nom) return alert('Nom obligatoire');
+    const data = { nom, contact: document.getElementById('f-contact').value.trim(),
+      telephone: document.getElementById('f-tel').value.trim(),
+      adresse: document.getElementById('f-adr').value.trim(),
+      produits: document.getElementById('f-prod').value.trim() };
+    if(id) Object.assign(byId('fournisseurs',id), data);
+    else DB.d.fournisseurs.push({ id: uid(), ...data });
+    DB.save(); render(); return true;
+  });
+}
+
+function formVehicule(id){
+  const v = id ? byId('vehicules',id) : {};
+  openModal(id?'Modifier le véhicule':'Nouveau véhicule', `
+    <div class="grid2">
+      <label>Immatriculation <input id="f-immat" value="${esc(v.immat||'')}"></label>
+      <label>Capacité <input id="f-cap" value="${esc(v.capacite||'')}" placeholder="200 casiers"></label>
+      <label>Marque <input id="f-marque" value="${esc(v.marque||'')}"></label>
+      <label>Modèle <input id="f-modele" value="${esc(v.modele||'')}"></label>
+      <label>Chauffeur
+        <select id="f-chauf"><option value="">— Aucun —</option>
+          ${DB.d.personnel.map(p => `<option value="${p.id}" ${v.chauffeurId===p.id?'selected':''}>${esc(p.nom)}</option>`).join('')}
+        </select>
+      </label>
+      <label>État
+        <select id="f-etat">
+          ${['actif','maintenance','hors_service'].map(e => `<option ${v.etat===e?'selected':''}>${e}</option>`).join('')}
+        </select>
+      </label>
+    </div>
+  `, () => {
+    const immat = document.getElementById('f-immat').value.trim();
+    if(!immat) return alert('Immatriculation obligatoire');
+    const data = { immat, capacite: document.getElementById('f-cap').value.trim(),
+      marque: document.getElementById('f-marque').value.trim(),
+      modele: document.getElementById('f-modele').value.trim(),
+      chauffeurId: document.getElementById('f-chauf').value,
+      etat: document.getElementById('f-etat').value };
+    if(id) Object.assign(byId('vehicules',id), data);
+    else DB.d.vehicules.push({ id: uid(), ...data });
+    DB.save(); render(); return true;
+  });
+}
+
+function formPersonnel(id){
+  const p = id ? byId('personnel',id) : {};
+  openModal(id?'Modifier':'Nouvelle personne', `
+    <label>Nom <input id="f-nom" value="${esc(p.nom||'')}"></label>
+    <div class="grid2">
+      <label>Rôle <input id="f-role" value="${esc(p.role||'')}" placeholder="Chauffeur, magasinier..."></label>
+      <label>Téléphone <input id="f-tel" value="${esc(p.telephone||'')}"></label>
+    </div>
+    <label>Salaire mensuel <input id="f-sal" type="number" value="${p.salaire||0}"></label>
+  `, () => {
+    const nom = document.getElementById('f-nom').value.trim();
+    if(!nom) return alert('Nom obligatoire');
+    const data = { nom, role: document.getElementById('f-role').value.trim(),
+      telephone: document.getElementById('f-tel').value.trim(),
+      salaire: +document.getElementById('f-sal').value||0 };
+    if(id) Object.assign(byId('personnel',id), data);
+    else DB.d.personnel.push({ id: uid(), ...data });
+    DB.save(); render(); return true;
+  });
+}
+
+function formMouvement(produitId, type){
+  if(!DB.d.produits.length) return alert('Ajoute d\'abord des produits');
+  openModal('Nouveau mouvement', `
+    <label>Produit
+      <select id="f-prod">
+        ${DB.d.produits.map(p => `<option value="${p.id}" ${produitId===p.id?'selected':''}>${esc(p.nom)} — stock: ${num(stockDe(p.id))}</option>`).join('')}
+      </select>
+    </label>
+    <div class="grid2">
+      <label>Type
+        <select id="f-type">
+          <option value="entree" ${type==='entree'?'selected':''}>Entrée</option>
+          <option value="sortie" ${type==='sortie'?'selected':''}>Sortie</option>
+          <option value="ajustement">Ajustement (inventaire)</option>
+        </select>
+      </label>
+      <label>Quantité <input id="f-qte" type="number" value="1"></label>
+    </div>
+    <div class="grid2">
+      <label>Date <input id="f-date" type="date" value="${today()}"></label>
+      <label>Motif <input id="f-motif" placeholder="Achat, casse..."></label>
+    </div>
+  `, () => {
+    const qte = +document.getElementById('f-qte').value;
+    if(!qte) return alert('Quantité invalide');
+    DB.d.mouvements.push({
+      id: uid(), type: document.getElementById('f-type').value,
+      produitId: document.getElementById('f-prod').value,
+      quantite: qte, date: document.getElementById('f-date').value||today(),
+      motif: document.getElementById('f-motif').value.trim(), ref: '' });
+    DB.save(); render(); return true;
+  });
+}
+
+function mouvementRapide(pid, type){ formMouvement(pid, type); }
+
+let lignesTemp = [];
+
+function formLivraison(){
+  if(!DB.d.clients.length) return alert('Ajoute d\'abord des clients');
+  if(!DB.d.produits.length) return alert('Ajoute d\'abord des produits');
+  lignesTemp = [];
+  openModal('Nouvelle livraison', `
+    <div class="grid2">
+      <label>Client
+        <select id="lv-client" onchange="syncZone()">
+          ${DB.d.clients.map(c => `<option value="${c.id}" data-zone="${c.zoneId||''}">${esc(c.nom)}</option>`).join('')}
+        </select>
+      </label>
+      <label>Date prévue <input type="date" id="lv-date" value="${today()}"></label>
+    </div>
+    <label>Zone
+      <select id="lv-zone"><option value="">— Aucune —</option>
+        ${DB.d.zones.map(z => `<option value="${z.id}">${esc(z.nom)}</option>`).join('')}
+      </select>
+    </label>
+    <div style="margin:14px 0 8px;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px">Articles</div>
+    <div id="lv-lignes"></div>
+    <button class="btn" onclick="addLigne()">+ Ajouter un article</button>
+  `, saveLivraison);
+  addLigne(); syncZone();
+}
+
+function syncZone(){
+  const sel = document.getElementById('lv-client');
+  const z = sel.options[sel.selectedIndex]?.dataset.zone;
+  if(z) document.getElementById('lv-zone').value = z;
+}
+
+function addLigne(){
+  lignesTemp.push({ produitId: DB.d.produits[0].id, quantite: 1, prixUnitaire: DB.d.produits[0].prixVente||0 });
+  renderLignes();
+}
+
+function renderLignes(){
+  const c = document.getElementById('lv-lignes');
+  if(!c) return;
+  c.innerHTML = lignesTemp.map((l,i) => {
+    const dispo = stockDe(l.produitId);
+    const manque = l.quantite > dispo;
+    return `<div class="ligne">
+      <select onchange="updLigne(${i},'produitId',this.value)">
+        ${DB.d.produits.map(pr => `<option value="${pr.id}" ${pr.id===l.produitId?'selected':''}>${esc(pr.nom)} (dispo: ${num(stockDe(pr.id))})</option>`).join('')}
+      </select>
+      <input type="number" min="1" value="${l.quantite}" onchange="updLigne(${i},'quantite',+this.value)"
+             style="${manque?'border-color:var(--warn)':''}">
+      <input type="number" value="${l.prixUnitaire}" onchange="updLigne(${i},'prixUnitaire',+this.value)">
+      <button class="btn mini danger" onclick="delLigne(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function updLigne(i,k,v){
+  lignesTemp[i][k] = v;
+  if(k==='produitId'){ const p = byId('produits',v); lignesTemp[i].prixUnitaire = p.prixVente||0; }
+  renderLignes();
+}
+function delLigne(i){ lignesTemp.splice(i,1); renderLignes(); }
+
+function saveLivraison(){
+  const lignes = lignesTemp.filter(l => l.quantite>0);
+  if(!lignes.length) return alert('Ajoute au moins un article');
+  const n = DB.d.livraisons.length + 1;
+  DB.d.livraisons.push({
+    id: uid(), ref: 'LIV-'+String(n).padStart(4,'0'),
+    clientId: document.getElementById('lv-client').value,
+    zoneId: document.getElementById('lv-zone').value,
+    datePrevue: document.getElementById('lv-date').value||today(),
+    statut: 'planifiee', lignes, stockApplied: false });
+  DB.save(); render(); return true;
+}
+
+function changerStatut(id, statut){
+  const l = byId('livraisons', id);
+  l.statut = statut;
+  if(statut==='livree' && !l.stockApplied){
+    l.lignes.forEach(li => {
+      DB.d.mouvements.push({ id: uid(), type: 'sortie', produitId: li.produitId,
+        quantite: li.quantite, date: today(), motif: 'Livraison '+l.ref, ref: l.ref });
+    });
+    l.stockApplied = true;
+  }
+  DB.save(); render();
+}
+
+function voirLivraison(id){
+  const l = byId('livraisons', id);
+  const total = l.lignes.reduce((s,x) => s + x.quantite*x.prixUnitaire, 0);
+  const c = byId('clients', l.clientId);
+  const e = DB.d.entreprise || {};
+  openModal('Livraison '+l.ref, `
+    <div style="background:var(--panel2);padding:12px;border-radius:10px;margin-bottom:12px">
+      <div style="font-weight:700;color:var(--acc)">${esc(e.nom||APP.nom)}</div>
+      <div style="color:var(--muted);font-size:11.5px">
+        ${esc(e.adresse||'')} ${esc(e.ville||'')} · Tél ${esc(e.telephone||'—')}
+      </div>
+    </div>
+    <p style="color:var(--muted);margin-top:0">
+      <b style="color:var(--txt);font-size:15px">${esc(c?.nom||'—')}</b><br>
+      ${esc(c?.adresse||'')}<br>
+      Zone : ${esc(byId('zones', l.zoneId)?.nom||'—')} · Prévue le ${dateFr(l.datePrevue)}
+    </p>
+    <table><thead><tr><th>Produit</th><th>Qté</th><th>PU</th><th>Total</th></tr></thead><tbody>
+      ${l.lignes.map(x => `<tr>
+        <td>${esc(byId('produits',x.produitId)?.nom||'—')}</td>
+        <td>${num(x.quantite)}</td><td>${money(x.prixUnitaire)}</td>
+        <td>${money(x.quantite*x.prixUnitaire)}</td>
+      </tr>`).join('')}
+      <tr><td colspan="3" style="text-align:right"><b>Total</b></td><td><b>${money(total)}</b></td></tr>
+    </tbody></table>
+    <div style="text-align:center;margin-top:16px;font-size:10.5px;color:var(--muted)">
+      Document généré par <b style="color:var(--gold)">${APP.nom}</b> — Conçu par Damien (Starly Koumba)
+    </div>
+  `, () => true, 'Fermer');
+}
+
+function formTransaction(type, id){
+  const t = id ? byId('transactions',id) : { type, date: today(), mode: 'Espèces' };
+  const cats = type==='recette' ? CAT_RECETTES : CAT_DEPENSES;
+  openModal(type==='recette'?'Nouvelle recette':'Nouvelle dépense', `
+    <div class="grid2">
+      <label>Date <input id="f-date" type="date" value="${t.date}"></label>
+      <label>Montant <input id="f-montant" type="number" value="${t.montant||''}"></label>
+    </div>
+    <label>Catégorie
+      <select id="f-cat">${cats.map(c => `<option ${t.categorie===c?'selected':''}>${c}</option>`).join('')}</select>
+    </label>
+    <label>Libellé / Description <input id="f-desc" value="${esc(t.description||'')}" placeholder="Détail de l'opération"></label>
+    <div class="grid2">
+      <label>Mode de paiement
+        <select id="f-mode">${MODES.map(m => `<option ${t.mode===m?'selected':''}>${m}</option>`).join('')}</select>
+      </label>
+      ${type==='recette' ? `
+        <label>Client (optionnel)
+          <select id="f-cli"><option value="">— Aucun —</option>
+            ${DB.d.clients.map(c => `<option value="${c.id}" ${t.clientId===c.id?'selected':''}>${esc(c.nom)}</option>`).join('')}
+          </select>
+        </label>` : `
+        <label>Fournisseur (optionnel)
+          <select id="f-four"><option value="">— Aucun —</option>
+            ${DB.d.fournisseurs.map(f => `<option value="${f.id}" ${t.fournisseurId===f.id?'selected':''}>${esc(f.nom)}</option>`).join('')}
+          </select>
+        </label>`}
+    </div>
+  `, () => {
+    const montant = +document.getElementById('f-montant').value;
+    if(!montant || montant<=0) return alert('Montant invalide');
+    const data = {
+      type,
+      date: document.getElementById('f-date').value || today(),
+      montant,
+      categorie: document.getElementById('f-cat').value,
+      description: document.getElementById('f-desc').value.trim(),
+      mode: document.getElementById('f-mode').value,
+      clientId: type==='recette' ? document.getElementById('f-cli').value : '',
+      fournisseurId: type==='depense' ? document.getElementById('f-four').value : '',
+    };
+    if(id) Object.assign(byId('transactions',id), data);
+    else DB.d.transactions.push({ id: uid(), ...data });
+    DB.save(); render(); return true;
+  });
+}
+
+let lignesFact = [];
+
+function formFacture(){
+  if(!DB.d.clients.length) return alert('Ajoute d\'abord un client');
+  lignesFact = [];
+  const n = DB.d.factures.length + 1;
+  openModal('Nouvelle facture', `
+    <div class="grid2">
+      <label>Numéro <input id="f-num" value="FAC-${String(n).padStart(4,'0')}"></label>
+      <label>Date <input type="date" id="f-date" value="${today()}"></label>
+      <label>Client
+        <select id="f-cli">${DB.d.clients.map(c => `<option value="${c.id}">${esc(c.nom)}</option>`).join('')}</select>
+      </label>
+      <label>Échéance <input type="date" id="f-ech" value="${today()}"></label>
+    </div>
+    <div style="margin:14px 0 8px;color:var(--muted);font-size:11.5px;text-transform:uppercase">Lignes</div>
+    <div id="fac-lignes"></div>
+    <button class="btn" onclick="addLigneFact()">+ Ajouter une ligne</button>
+  `, saveFacture);
+  addLigneFact();
+}
+
+function addLigneFact(){
+  lignesFact.push({ designation: '', quantite: 1, prixUnitaire: 0 });
+  renderLignesFact();
+}
+
+function renderLignesFact(){
+  const c = document.getElementById('fac-lignes');
+  if(!c) return;
+  c.innerHTML = lignesFact.map((l,i) => `<div class="ligne" style="grid-template-columns:2fr 1fr 1fr auto">
+    <input value="${esc(l.designation)}" placeholder="Désignation" onchange="updLigneFact(${i},'designation',this.value)">
+    <input type="number" value="${l.quantite}" onchange="updLigneFact(${i},'quantite',+this.value)">
+    <input type="number" value="${l.prixUnitaire}" onchange="updLigneFact(${i},'prixUnitaire',+this.value)">
+    <button class="btn mini danger" onclick="delLigneFact(${i})">✕</button>
+  </div>`).join('');
+}
+function updLigneFact(i,k,v){ lignesFact[i][k] = v; }
+function delLigneFact(i){ lignesFact.splice(i,1); renderLignesFact(); }
+
+function saveFacture(){
+  const lignes = lignesFact.filter(l => l.designation && l.quantite>0);
+  if(!lignes.length) return alert('Ajoute au moins une ligne');
+  DB.d.factures.push({
+    id: uid(), numero: document.getElementById('f-num').value,
+    date: document.getElementById('f-date').value||today(),
+    echeance: document.getElementById('f-ech').value,
+    clientId: document.getElementById('f-cli').value,
+    tva: DB.d.entreprise?.tva || 0,
+    lignes, paiements: [], livraisonId: '' });
+  DB.save(); render(); return true;
+}
+
+function facturerLivraison(id){
+  const l = byId('livraisons', id);
+  const n = DB.d.factures.length + 1;
+  const numero = 'FAC-'+String(n).padStart(4,'0');
+  DB.d.factures.push({
+    id: uid(), numero, date: today(), echeance: today(),
+    clientId: l.clientId, tva: DB.d.entreprise?.tva||0,
+    lignes: l.lignes.map(x => ({
+      designation: byId('produits',x.produitId)?.nom || 'Article',
+      quantite: x.quantite, prixUnitaire: x.prixUnitaire,
+    })),
+    paiements: [], livraisonId: l.id });
+  DB.save();
+  alert('Facture '+numero+' créée. Va dans Finances → Factures pour l\'encaisser.');
+  finSubTab = 'factures'; go('finances');
+}
+
+function voirFacture(id){
+  const f = byId('factures', id);
+  const ht = totalFacture(f), tva = ht * ((f.tva||0)/100), ttc = ht + tva;
+  const paye = payeFacture(f);
+  const e = DB.d.entreprise || {};
+  openModal('Facture '+f.numero, `
+    <div style="background:var(--panel2);padding:14px;border-radius:10px;margin-bottom:14px">
+      <div style="font-weight:700;color:var(--acc);font-size:16px">${esc(e.nom||APP.nom)}</div>
+      <div style="color:var(--muted);font-size:12px">
+        ${esc(e.adresse||'')} ${esc(e.ville||'')}<br>
+        Tél : ${esc(e.telephone||'—')} · RCCM : ${esc(e.rccm||'—')} · NIF : ${esc(e.nif||'—')}
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:10px">
+      <span>Date : <b style="color:var(--txt)">${dateFr(f.date)}</b></span>
+      <span>Échéance : <b style="color:var(--txt)">${dateFr(f.echeance)}</b></span>
+    </div>
+    <p style="color:var(--muted);margin:0 0 14px">
+      <b style="color:var(--txt)">Client : ${esc(byId('clients',f.clientId)?.nom||'—')}</b>
+    </p>
+    <table><thead><tr><th>Désignation</th><th>Qté</th><th>PU</th><th>Total</th></tr></thead><tbody>
+      ${f.lignes.map(l => `<tr>
+        <td>${esc(l.designation)}</td><td>${num(l.quantite)}</td>
+        <td>${money(l.prixUnitaire)}</td><td>${money(l.quantite*l.prixUnitaire)}</td>
+      </tr>`).join('')}
+    </tbody></table>
+    <div style="text-align:right;margin-top:14px;font-size:14px;line-height:1.8">
+      Total HT : <b>${money(ht)}</b><br>
+      TVA (${f.tva||0}%) : <b>${money(tva)}</b><br>
+      <span style="font-size:17px;color:var(--acc)">Total TTC : <b>${money(ttc)}</b></span><br>
+      Déjà payé : <b style="color:var(--acc)">${money(paye)}</b><br>
+      Reste dû : <b style="color:${ttc-paye>0?'var(--warn)':'var(--acc)'}">${money(ttc-paye)}</b>
+    </div>
+    ${f.paiements?.length ? `
+      <div style="margin-top:16px"><b style="font-size:12.5px;color:var(--muted)">PAIEMENTS</b>
+      ${f.paiements.map(p => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px">
+        <span>${dateFr(p.date)} · ${esc(p.mode||'')}</span><b>${money(p.montant)}</b>
+      </div>`).join('')}</div>` : ''}
+    <div style="text-align:center;margin-top:20px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)">
+      <b style="color:var(--gold)">${APP.nom}</b> — Conçu par Damien (Starly Koumba)<br>
+      © ${APP.annee} — Merci de votre confiance
+    </div>
+    <button class="btn" style="margin-top:14px" onclick="window.print()">🖨️ Imprimer</button>
+  `, () => true, 'Fermer');
+}
+
+function formPaiement(factureId){
+  const f = byId('factures', factureId);
+  const reste = totalTTCFacture(f) - payeFacture(f);
+  openModal('Encaisser un paiement', `
+    <p style="color:var(--muted)">Facture <b style="color:var(--txt)">${esc(f.numero)}</b> — Reste dû : <b style="color:var(--warn)">${money(reste)}</b></p>
+    <div class="grid2">
+      <label>Montant <input id="p-montant" type="number" value="${reste}"></label>
+      <label>Date <input type="date" id="p-date" value="${today()}"></label>
+    </div>
+    <label>Mode
+      <select id="p-mode">${MODES.map(m => `<option>${m}</option>`).join('')}</select>
+    </label>
+  `, () => {
+    const montant = +document.getElementById('p-montant').value;
+    if(!montant || montant<=0) return alert('Montant invalide');
+    f.paiements = f.paiements || [];
+    f.paiements.push({ date: document.getElementById('p-date').value||today(),
+      montant, mode: document.getElementById('p-mode').value });
+    DB.d.transactions.push({
+      id: uid(), type: 'recette', date: document.getElementById('p-date').value||today(),
+      montant, categorie: 'Paiement client',
+      description: 'Règlement facture '+f.numero, mode: document.getElementById('p-mode').value,
+      clientId: f.clientId });
+    DB.save(); render(); return true;
+  });
+}
+
+function supprimer(table, id){
+  if(!confirm('Confirmer la suppression ?')) return;
+  DB.d[table] = DB.d[table].filter(x => x.id !== id);
+  DB.save(); render();
+}
+
+/* ============================================================
+   FILMSTRIP
+============================================================ */
+const STRIP_ITEMS = [
+  { emoji:'🍾', g:'linear-gradient(135deg,#3a2a1e,#0f1720)', label:'Casiers' },
+  { emoji:'🚚', g:'linear-gradient(135deg,#1e3a5f,#0f1720)', label:'Camion livraison' },
+  { emoji:'🛣️', g:'linear-gradient(135deg,#2a2a2a,#0f1720)', label:'Sur la route' },
+  { emoji:'🧃', g:'linear-gradient(135deg,#1e4a2a,#0f1720)', label:'Stock' },
+  { emoji:'🏪', g:'linear-gradient(135deg,#4a3a1e,#0f1720)', label:'Comptoir' },
+  { emoji:'🍺', g:'linear-gradient(135deg,#3a2e1e,#0f1720)', label:'Bouteilles' },
+  { emoji:'🚛', g:'linear-gradient(135deg,#1e2a4a,#0f1720)', label:'Flotte' },
+  { emoji:'📦', g:'linear-gradient(135deg,#3a2e1e,#0f1720)', label:'Cargaison' },
+  { emoji:'🥤', g:'linear-gradient(135deg,#1e3a3a,#0f1720)', label:'Boissons' },
+  { emoji:'🌅', g:'linear-gradient(135deg,#4a2a1e,#0f1720)', label:'Tournée' },
+];
+
+function renderFilmstrip(){
+  const track = document.getElementById('stripTrack');
+  const items = [...STRIP_ITEMS, ...STRIP_ITEMS];
+  track.innerHTML = items.map(it => `
+    <div class="item" data-label="${esc(it.label)}" style="background:${it.g}">
+      ${it.img ? `<img src="${esc(it.img)}" alt="${esc(it.label)}" onerror="this.replaceWith('${it.emoji}')">` : it.emoji}
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   ONBOARDING
+============================================================ */
+function onboarding(){
+  openModal('👋 Bienvenue sur ' + APP.nom, `
+    <p style="color:var(--muted);margin-top:0">
+      Application de gestion de dépôt de boissons.
+      Ces informations apparaîtront sur vos factures et bons de livraison.
+      Modifiables à tout moment via le bouton ⚙️.
+    </p>
+    <label>Nom de l'entreprise * <input id="f-nom" placeholder="Dépôt Central SARL" autofocus></label>
+    <label>Type d'activité
+      <select id="f-type">
+        ${['Dépôt de boissons','Grossiste boissons','Demi-grossiste','Distributeur','Supermarché','Autre']
+          .map(t => `<option>${t}</option>`).join('')}
+      </select>
+    </label>
+    <div class="grid2">
+      <label>Ville <input id="f-ville"></label>
+      <label>Téléphone <input id="f-tel"></label>
+      <label>RCCM <input id="f-rccm"></label>
+      <label>NIF / IFU <input id="f-nif"></label>
+      <label>Devise <input id="f-devise" value="FCFA"></label>
+      <label>TVA (%) <input id="f-tva" type="number" value="0"></label>
+    </div>
+    <label>Slogan (optionnel) <input id="f-slogan" placeholder="Votre partenaire en boissons depuis 2010"></label>
+    <div class="about-credit">
+      <div style="font-size:11px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">Application conçue par</div>
+      <div class="name">Damien (Starly Koumba)</div>
+    </div>
+  `, () => {
+    const nom = document.getElementById('f-nom').value.trim();
+    if(!nom) return alert('Le nom est obligatoire');
+    DB.d.entreprise = {
+      nom, type: document.getElementById('f-type').value,
+      ville: document.getElementById('f-ville').value.trim(),
+      telephone: document.getElementById('f-tel').value.trim(),
+      rccm: document.getElementById('f-rccm').value.trim(),
+      nif: document.getElementById('f-nif').value.trim(),
+      devise: document.getElementById('f-devise').value.trim() || 'FCFA',
+      tva: +document.getElementById('f-tva').value || 0,
+      slogan: document.getElementById('f-slogan').value.trim(),
+    };
+    DB.save();
+    refreshBrand();
+    setTimeout(() => {
+      if(confirm('Voulez-vous charger des données de démonstration ?')){
+        seedDemo(); go('dashboard');
+      } else {
+        go('dashboard');
+      }
+    }, 200);
+    return true;
+  }, 'Démarrer');
+}
+
+/* ============================================================
+   DÉMO
+============================================================ */
+function seedDemo(){
+  const z1 = uid(), z2 = uid();
+  DB.d.zones = [
+    { id: z1, nom: 'Centre-ville', description: 'Livraison matin', fraisLivraison: 0 },
+    { id: z2, nom: 'Périphérie Nord', description: 'Livraison après-midi', fraisLivraison: 2000 },
+  ];
+  const c1 = uid(), c2 = uid();
+  DB.d.clients = [
+    { id: c1, nom: 'Bar Le Palmier', telephone: '07 00 00 01', adresse: '12 av. de la Paix', zoneId: z1 },
+    { id: c2, nom: 'Épicerie Diallo', telephone: '07 00 00 02', adresse: 'Rue 15, Quartier Nord', zoneId: z2 },
+  ];
+  const f1 = uid();
+  DB.d.fournisseurs = [
+    { id: f1, nom: 'Brasseries du Pays', contact: 'M. Koné', telephone: '05 00 00 01',
+      adresse: 'Zone industrielle', produits: 'Bières, sodas' },
+  ];
+  const p1 = uid(), p2 = uid(), p3 = uid();
+  DB.d.produits = [
+    { id: p1, nom: 'Coca-Cola 33cl', categorie: 'Soda', contenance: '33cl', unite: 'casier', seuil: 20, prixAchat: 8000, prixVente: 10000 },
+    { id: p2, nom: 'Eau minérale 1.5L', categorie: 'Eau', contenance: '1.5L', unite: 'pack', seuil: 30, prixAchat: 3000, prixVente: 4000 },
+    { id: p3, nom: 'Bière blonde 50cl', categorie: 'Bière', contenance: '50cl', unite: 'casier', seuil: 15, prixAchat: 12000, prixVente: 15000 },
+  ];
+  DB.d.mouvements = [
+    { id: uid(), type: 'entree', produitId: p1, quantite: 50, date: today(), motif: 'Stock initial', ref: '' },
+    { id: uid(), type: 'entree', produitId: p2, quantite: 25, date: today(), motif: 'Stock initial', ref: '' },
+    { id: uid(), type: 'entree', produitId: p3, quantite: 10, date: today(), motif: 'Stock initial', ref: '' },
+  ];
+  DB.d.personnel = [
+    { id: uid(), nom: 'Moussa Traoré', role: 'Chauffeur', telephone: '07 11 22 33', salaire: 150000 },
+    { id: uid(), nom: 'Awa Camara', role: 'Magasinière', telephone: '07 44 55 66', salaire: 120000 },
+  ];
+  DB.d.vehicules = [
+    { id: uid(), immat: 'AB-1234-CD', marque: 'Toyota', modele: 'Hilux',
+      capacite: '150 casiers', chauffeurId: DB.d.personnel[0].id, etat: 'actif' },
+  ];
+  DB.d.livraisons = [{
+    id: uid(), ref: 'LIV-0001', clientId: c1, zoneId: z1, datePrevue: today(),
+    statut: 'planifiee', stockApplied: false,
+    lignes: [{ produitId: p1, quantite: 5, prixUnitaire: 10000 }, { produitId: p3, quantite: 2, prixUnitaire: 15000 }],
+  }];
+  DB.d.transactions = [
+    { id: uid(), type: 'recette', date: today(), montant: 80000, categorie: 'Vente comptoir',
+      description: 'Vente du matin', mode: 'Espèces', clientId: '' },
+    { id: uid(), type: 'depense', date: today(), montant: 25000, categorie: 'Carburant',
+      description: 'Plein camion', mode: 'Espèces', fournisseurId: '' },
+    { id: uid(), type: 'depense', date: today(), montant: 300000, categorie: 'Achat marchandises',
+      description: 'Approvisionnement sodas', mode: 'Virement', fournisseurId: f1 },
+  ];
+  DB.d.factures = [];
+  DB.save();
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+DB.load();
+renderFilmstrip();
+
+if(!DB.d.entreprise){
+  renderNav();
+  document.getElementById('view').innerHTML = '';
+  refreshBrand();
+  onboarding();
+} else {
+  refreshBrand();
+  renderNav();
+  render();
+}
+</script>
+</body>
+</html>
